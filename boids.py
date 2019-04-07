@@ -38,10 +38,21 @@ class Boid:
             dx, dy = (dx*c - dy*s), (dy*c + dx*s)
         gl.glEnd()
 
-
+    def tick(self):
+        self.x += self.vx
+        self.y += self.vy 
+        if self.x > WIDTH:
+            self.x -= WIDTH
+        if self.y>HEIGHT:
+            self.y -= HEIGHT 
+        if self.x<0:
+            self.x += WIDTH
+        if self.y<0:
+            self.y += HEIGHT 
 
 def tick(td):
-    pass
+    for boid in boids:
+        boid.tick()
 
 def draw():
     window.clear()
