@@ -13,12 +13,13 @@ BOID_COUNT = 30
 BOID_SPEED = 5
 MAX_SPEED = 15
 
-DESIRED_DISTANCE = 40
+DESIRED_DISTANCE = 30
 EYESIGHT_RADIUS = 200
 
 SPACING = True
 GROUPING = True
 
+MOUSE_SEPARATION_FACTOR = 0.9
 MOUSE_COHESION_FACTOR = 0.09
 COHESION_FACTOR = 0.01
 SEPARATION_FACTOR = 0.1
@@ -196,7 +197,7 @@ class Boid:
             self.ay=0
 
     #my own set of rules:
-    #Rule 4: Boids try to follow mouse
+    #Rule 4: Boids follow mouse
     def mouse_follow(self):
         global mouse
         global mousex
@@ -212,11 +213,29 @@ class Boid:
             else:
                 self.mx=0
                 self.my=0
-        else:
+        if mouse == 'None':
             self.mx=0
             self.my=0
 
-    #Rule 5: Boids try to eat food (blue)
+    #Rule 5: Boids fear mouse
+    def mouse_fear(self):
+        global mouse
+        global mousex
+        global mousey
+        mouseboid = Boid()
+        mouseboid.x=mousex+OFFSET
+        mouseboid.y=mousey+OFFSET
+
+        if mouse == 'Fear':
+            if self.distance(mouseboid)<EYESIGHT_RADIUS:
+                self.mx=-(mouseboid.x-self.ix)*MOUSE_SEPARATION_FACTOR
+                self.my=-(mouseboid.y-self.iy)*MOUSE_SEPARATION_FACTOR
+            else:
+                self.mx=0
+                self.my=0
+        if mouse == 'None':
+            self.mx=0
+            self.my=0
 
     def tick(self):
         #calculate new speed vector
@@ -242,6 +261,7 @@ class Boids:
     def __init__(self):
         #init new set of boids
         self.boids = []
+        
         for i in range(0,BOID_COUNT):
             boid = Boid(i)
             self.boids.append(boid)
@@ -255,6 +275,7 @@ class Boids:
                 boid.separation(self)
                 boid.alignment(self)
                 boid.mouse_follow()
+                boid.mouse_fear()
                 boid.tick()
 
 boids = Boids()
@@ -270,6 +291,8 @@ def draw():
     window.clear()
     status = "<R>Restart simulation <SPACE>paused:"+str(paused)+" <G>Grouping:"+str(GROUPING)+" <S>Spacing:"+str(SPACING)
     status = status + " <M>Mouse:"+mouse+" position: "+str(mousex)+","+str(mousey)
+    if not mouse == 'None':
+        status = status + ' - click mouse to lay brick :)'
     label = pyglet.text.Label(status,
                         font_name='Kenvector Future Thin',
                         font_size=10,
