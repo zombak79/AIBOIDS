@@ -3,67 +3,59 @@ import random
 import math
 from pyglet import gl
 
-WIDTH = 1024
-HEIGHT = 768
+WIDTH = 1400
+HEIGHT = 900
+
+OFFSET = 100000
 
 BOID_RADIUS = 8
-BOID_COUNT = 50
+BOID_COUNT = 40
 BOID_SPEED = 5
-MAX_SPEED = 10
+MAX_SPEED = 15
 
-DESIRED_DISTANCE = 20
+DESIRED_DISTANCE = 32
 EYESIGHT_RADIUS = 200
 
 SPACING = True
 GROUPING = True
 
-INERTIA = 0.25
-LOCAL_PART = 0.25
-GLOBAL_PART = 0.5
-
-
 COHESION_FACTOR = 0.01
 SEPARATION_FACTOR = 0.1
 ALIGNMENT_FACTOR = 0.6
 
-
-window = pyglet.window.Window(width=WIDTH, height=HEIGHT)
+window = pyglet.window.Window(width=WIDTH, height=HEIGHT+20)
 
 paused = False
-
 
 class Boid:
     def __init__(self,id=0):
         #init boid randomly
         self.id=id
         self.r = BOID_RADIUS
-        self.x = random.randint(0+BOID_RADIUS,WIDTH-BOID_RADIUS)
-        self.y = random.randint(0+BOID_RADIUS,HEIGHT-BOID_RADIUS)
-        self.vx = 0
-        self.vy = 0
+        self.x = random.randint(0+BOID_RADIUS,WIDTH-BOID_RADIUS) + OFFSET
+        self.y = random.randint(0+BOID_RADIUS,HEIGHT-BOID_RADIUS) + OFFSET
         self.vx = random.randint(-1*MAX_SPEED,1*MAX_SPEED)
         self.vy = random.randint(-1*MAX_SPEED,1*MAX_SPEED)
-        # self.vx = random.randint(-1*0,1*MAX_SPEED)
-        # self.vy = random.randint(-1*0,1*MAX_SPEED)
-        self.lx = 0
-        self.ly = 0
-        self.gx = 0
-        self.gy = 0
-        self.top_speed = 0.01
+        
+        #cohesion vector
         self.cx = 0 
         self.cy = 0
+        #separation vector
         self.sx = 0 
         self.sy = 0
+        #alignment vector
         self.ax = 0 
         self.ay = 0
 
     def draw(self):
+        
         #draw boid
-        self.circle(self.x,self.y,self.r)
-        pyglet.graphics.draw(2, pyglet.gl.GL_LINES, ('v2i', (self.x, self.y, self.x+int(self.vx), self.y+int(self.vy))))
-
+        self.circle(self.x-OFFSET,self.y-OFFSET,self.r)
+        pyglet.graphics.draw(2, pyglet.gl.GL_LINES, ('v2i', (self.x-OFFSET, self.y-OFFSET, self.x-OFFSET+int(self.vx), self.y-OFFSET+int(self.vy))))
+        #print status
+        
     def circle(self, x, y, radius):
-        iterations = 20
+        iterations = 6
         s = math.sin(2*math.pi / iterations)
         c = math.cos(2*math.pi / iterations)
 
@@ -84,27 +76,66 @@ class Boid:
         if not speed == 0:
             self.vx=(self.vx/speed)*MAX_SPEED
             self.vy=(self.vy/speed)*MAX_SPEED
-            # koef = (float(speed)/float(self.top_speed))*float(MAX_SPEED)
-            # #print(self.vx,self.vy,speed,self.top_speed,koef)
-            # desired_speed = speed * koef
-            
-            # koef = speed/desired_speed
-            # #print(self.vx,self.vy,speed,self.top_speed,koef)
-            # self.vx = self.vx*koef
-            # self.vy = self.vy*koef
-
     
-    def set_new_v(self):
-        #calc new (vx,vy)
-        self.vx = self.vx*INERTIA + LOCAL_PART*self.lx + GLOBAL_PART*self.gx
-        self.vy = self.vy*INERTIA + LOCAL_PART*self.ly + GLOBAL_PART*self.gy
-
+    def calc_distance(self,x1,x2,y1,y2):
+        return math.sqrt(((x1-x2)**2)+((y1-y2)**2))
+    
     def distance(self,boid):
-        return math.sqrt(((self.x-boid.x)**2)+((self.y-boid.y)**2))
+        #print(self.x,self.y,boid.x,boid.y)
+        distance = self.calc_distance(self.x,boid.x,self.y,boid.y)
+        self.ix=self.x
+        self.iy=self.y
+        distance2 = self.calc_distance(self.x+WIDTH,boid.x,self.y,boid.y)
+        if distance2<distance:
+            distance=distance2
+            self.ix=self.x+WIDTH
+            self.iy=self.y
+        distance2 = self.calc_distance(self.x-WIDTH,boid.x,self.y,boid.y)
+        if distance2<distance:
+            distance=distance2
+            self.ix=self.x-WIDTH
+            self.iy=self.y
+        distance2 = self.calc_distance(self.x,boid.x,self.y+HEIGHT,boid.y)
+        if distance2<distance:
+            distance=distance2
+            self.ix=self.x
+            self.iy=self.y+HEIGHT
+        distance2 = self.calc_distance(self.x,boid.x,self.y-HEIGHT,boid.y)
+        if distance2<distance:
+            distance=distance2
+            self.ix=self.x
+            self.iy=self.y-HEIGHT
+        distance2 = self.calc_distance(self.x-WIDTH,boid.x,self.y-HEIGHT,boid.y)
+        if distance2<distance:
+            distance=distance2
+            self.ix=self.x-WIDTH
+            self.iy=self.y-HEIGHT
+        distance2 = self.calc_distance(self.x+WIDTH,boid.x,self.y+HEIGHT,boid.y)
+        if distance2<distance:
+            distance=distance2
+            self.ix=self.x+WIDTH
+            self.iy=self.y+HEIGHT        
+        distance2 = self.calc_distance(self.x+WIDTH,boid.x,self.y-HEIGHT,boid.y)
+        if distance2<distance:
+            distance=distance2
+            self.ix=self.x+WIDTH
+            self.iy=self.y-HEIGHT
+        distance2 = self.calc_distance(self.x-WIDTH,boid.x,self.y+HEIGHT,boid.y)
+        if distance2<distance:
+            distance=distance2
+            self.ix=self.x-WIDTH
+            self.iy=self.y+HEIGHT
+        #print(distance)
+        return distance
 
     #http://www.vergenet.net/~conrad/boids/pseudocode.html
     #Rule 1: Boids try to fly towards the centre of mass of neighbouring boids. (cohesion)
     def cohesion(self,boids):
+        if not GROUPING:
+            self.cx = 0
+            self.cy = 0
+            return
+
         count = 0
         x=0
         y=0
@@ -115,8 +146,8 @@ class Boid:
                     y+=neighbour.y
                     count+=1
         if count>0:
-            x=(x/count-self.x)*COHESION_FACTOR
-            y=(y/count-self.y)*COHESION_FACTOR
+            x=(x/count-self.ix)*COHESION_FACTOR
+            y=(y/count-self.iy)*COHESION_FACTOR
         else:
             x=0
             y=0
@@ -127,14 +158,19 @@ class Boid:
 
     #Rule 2: Boids try to keep a small distance away from other objects (including other boids). (separation)
     def separation(self,boids):
+        if not SPACING:
+            self.sx = 0
+            self.sy = 0
+            return
+        
         count = 0
         x=0
         y=0
         for neighbour in boids.boids:
             if not self.id == neighbour.id:
                 if self.distance(neighbour)<DESIRED_DISTANCE:
-                    x=x-(neighbour.x-self.x)
-                    y=y-(neighbour.y-self.y)
+                    x=x-(neighbour.x-self.ix)
+                    y=y-(neighbour.y-self.iy)
         self.sx = x*SEPARATION_FACTOR
         self.sy = y*SEPARATION_FACTOR
 
@@ -156,25 +192,29 @@ class Boid:
             self.ax=0
             self.ay=0
 
+    #my own set of rules:
+    #Rule 4: Boids try to avoid danger (red)
+
+    #Rule 5: Boids try to eat food (blue)
 
     def tick(self):
+        #calculate new speed vector
         self.vx+=self.ax+self.sx+self.cx 
         self.vy+=self.ay+self.sy+self.cy
-        #trunc (vx,vy)
-        # self.vx = int(self.vx)
-        # self.vy = int(self.vy)
-        #move boid in (vx,vy) direction
+        #limit speed
         if self.get_speed()>MAX_SPEED:
             self.set_speed()
+        #move boid with speed vector
         self.x += int(self.vx)
         self.y += int(self.vy)
-        if self.x > WIDTH:
+        #if boid is out of screen move it on the other side
+        if self.x > WIDTH+OFFSET:
             self.x -= WIDTH
-        if self.y>HEIGHT:
+        if self.y>HEIGHT+OFFSET:
             self.y -= HEIGHT 
-        if self.x<0:
+        if self.x<OFFSET:
             self.x += WIDTH
-        if self.y<0:
+        if self.y<OFFSET:
             self.y += HEIGHT 
 
 class Boids:
@@ -189,44 +229,8 @@ class Boids:
 
     def tick(self):
         global paused
-        maxv = 0
+        
         if not paused:
-            #iterate all boids for actions with neighbours (local behavior)
-            # for evaluated in range(0,len(self.boids)):
-            #     tx = 0
-            #     ty = 0
-            #     cnt = 1
-                
-            #     for neighbour in range(0,len(self.boids)):
-            #         if not evaluated == neighbour:
-            #             distance = math.sqrt(((self.boids[neighbour].x-self.boids[evaluated].x)**2)+((self.boids[neighbour].y-self.boids[evaluated].y)**2))
-            #             if distance == 0:
-            #                 distance = 1
-            #             if distance<DESIRED_DISTANCE and SPACING:
-            #                 ax = -(self.boids[neighbour].x-self.boids[evaluated].x)/distance
-            #                 ay = -(self.boids[neighbour].y-self.boids[evaluated].y)/distance
-            #                 self.boids[evaluated].lx += ax*BOID_SPEED
-            #                 self.boids[evaluated].ly += ay*BOID_SPEED
-            #             if distance<EYESIGHT_RADIUS and GROUPING:
-            #                 ax = (self.boids[neighbour].x-self.boids[evaluated].x)/distance
-            #                 ay = (self.boids[neighbour].y-self.boids[evaluated].y)/distance
-            #                 self.boids[evaluated].lx += ax*BOID_SPEED
-            #                 self.boids[evaluated].ly += ay*BOID_SPEED
-            #             if distance<EYESIGHT_RADIUS:
-            #                 tx += self.boids[neighbour].vx
-            #                 ty += self.boids[neighbour].vy
-            #                 cnt += 1
-            #     self.boids[evaluated].gx = tx/cnt
-            #     self.boids[evaluated].gy = ty/cnt
-            #     self.boids[evaluated].set_new_v()
-            #     if self.boids[evaluated].get_speed()>maxv:
-            #         maxv = self.boids[evaluated].get_speed()
-            #     #print(maxv,self.boids[evaluated].get_speed())    
-            # # print((tx/(len(self.boids)+1),ty/(len(self.boids)+1)))    
-            # for boid in self.boids:
-            #     boid.top_speed = maxv                
-
-
             #move all boids
             for boid in self.boids:
                 boid.cohesion(self)
@@ -246,6 +250,14 @@ def tick(td):
     
 def draw():
     window.clear()
+    status = "<R>Restart simulation <SPACE>paused:"+str(paused)+" <G>Grouping:"+str(GROUPING)+" <S>Spacing:"+str(SPACING)
+    label = pyglet.text.Label(status,
+                        font_name='Kenvector Future Thin',
+                        font_size=10,
+                        x=0, y=window.height-11
+                    )
+    label.draw()
+
     for boid in boids.boids:
         boid.draw()
 
@@ -253,26 +265,31 @@ def draw():
 def init():
     global boids
     boids = Boids()
-    maxv = 0
-    for boid in boids.boids:
-        if boid.get_speed()>maxv:
-            maxv = boid.get_speed()
-
-    for boid in boids.boids:
-        boid.top_speed = maxv
 
 def key_pressed(key, mod):
     global pressed_keys
     global paused
+    global GROUPING
+    global SPACING
     if key == pyglet.window.key.SPACE:
         if paused:
             paused = False
         else:
             paused = True
-    
-
+    if key == pyglet.window.key.S:
+        if SPACING:
+            SPACING = False
+        else:
+            SPACING = True
+    if key == pyglet.window.key.G:
+        if GROUPING:
+            GROUPING = False
+        else:
+            GROUPING = True
+    if key == pyglet.window.key.R:
+        init()
 init()
-pyglet.clock.schedule_interval(tick,1/30)
+pyglet.clock.schedule_interval(tick,1/25)
 window.push_handlers(
     on_draw=draw,
     on_key_press=key_pressed,
