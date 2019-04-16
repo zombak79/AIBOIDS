@@ -1,7 +1,7 @@
 import pyglet
 import random
 import math
-from pyglet import gl
+from pyglet import gl 
 
 WIDTH = 1400
 HEIGHT = 900
@@ -21,7 +21,7 @@ GROUPING = True
 
 COHESION_FACTOR = 0.01
 SEPARATION_FACTOR = 0.1
-ALIGNMENT_FACTOR = 0.6
+ALIGNMENT_FACTOR = 0.1
 
 MOUSE_COHESION_FACTOR = 0.9
 MOUSE_SEPARATION_FACTOR = 0.9
